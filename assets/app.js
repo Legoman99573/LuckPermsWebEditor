@@ -8,6 +8,14 @@ var who = "";
 // the command alias used to open the editor page
 var cmdAlias = "lp";
 
+var permsListObject = document.getElementById("permissions-list")
+
+function addAutoCompletePermission(perm) {
+    var option = document.createElement("option");
+    option.value = perm;
+    permsListObject.appendChild(option);
+}
+
 // makes a minimal node object from the given parameters.
 function makeNode(perm, value, server, world, expiry, contexts) {
     var node = {};
@@ -205,17 +213,17 @@ function handlePull(e) {
     if (node.hasOwnProperty("expiry")) {
         children[1].value = node.expiry;
     } else {
-    	children[1].value = null;
+        children[1].value = null;
     }
     if (node.hasOwnProperty("server")) {
         children[2].value = node.server;
     } else {
-    	children[2].value = null;
+        children[2].value = null;
     }
     if (node.hasOwnProperty("world")) {
         children[3].value = node.world;
     } else {
-    	children[3].value = null;
+        children[3].value = null;
     }
     if (node.hasOwnProperty("contexts")) {
         var contextsStr = "";
@@ -227,8 +235,18 @@ function handlePull(e) {
         }
         children[4].value = contextsStr;
     } else {
-    	children[4].value = null;
+        children[4].value = null;
     }
+}
+
+function handleAddEnter(element, event) {
+    // listen for the enter key
+    if (event.which === 13 || event.keyCode === 13) {
+        handleAdd(element);
+        return false
+    }
+
+    return true
 }
 
 function handleAdd(e) {
@@ -331,44 +349,33 @@ function handleSave(e) {
 function reloadTable() {
     var content = "";
 
-    // new input header at the top of the table
-    content += '<div class="newentry">';
-    content += '<div class="inpform">';
-    content += '<i onclick="handleAdd(this)" class="clickable material-icons" style="font-size: 35px; vertical-align: middle;">add_box</i>';
-    content += '<input type="text" name="id" placeholder="Permission" style="width: 175px; margin-left: 20px;"></input>';
-    content += '<input type="text" name="id" placeholder="Expiry"></input>';
-    content += '<input type="text" name="id" placeholder="Server"></input>';
-    content += '<input type="text" name="id" placeholder="World"></input>';
-    content += '<input type="text" name="id" placeholder="Contexts"></input>';
-    content += '<i onclick="handleSave(this)" class="clickable material-icons" style="font-size: 35px; vertical-align: middle; float: right; padding-right: 10px;">save</i>';
-    content += '</div>';
-    content += '</div>';
+    if (rows.length) {
+        // begin the table
+        content += '<div class="table">';
 
-    // begin the table
-    content += '<div class="table">';
+        // field headings
+        content += '<div class="row header">';
+        content += '<div class="cell">Permission</div>';
+        content += '<div class="cell">Value</div>';
+        content += '<div class="cell">Expiry</div>';
+        content += '<div class="cell">Server</div>';
+        content += '<div class="cell">World</div>';
+        content += '<div class="cell">Contexts</div>';
+        content += '<div class="cell"></div>';
+        content += '</div>';
 
-    // field headings
-    content += '<div class="row header">';
-    content += '<div class="cell">Permission</div>';
-    content += '<div class="cell">Value</div>';
-    content += '<div class="cell">Expiry</div>';
-    content += '<div class="cell">Server</div>';
-    content += '<div class="cell">World</div>';
-    content += '<div class="cell">Contexts</div>';
-    content += '<div class="cell"></div>';
-    content += '</div>';
+        // add each row
+        var i = -1;
+        rows.forEach(function (node) {
+            i++;
+            content += nodeToHtml(i, node)
+        });
 
-    // add each row
-    var i = -1;
-    rows.forEach(function (node) {
-        i++;
-        content += nodeToHtml(i, node)
-    });
-
-    content += '</div>';
+        content += '</div>';
+    }
 
     // set the data
-    var element = document.getElementById("table-content");
+    var element = document.getElementById("table-section");
     element.innerHTML = content
 }
 
@@ -435,90 +442,38 @@ function nodeToHtml(id, node) {
     return content
 }
 
-function removeTable() {
-    var content = document.getElementById("table-content");
-    content.innerHTML = ""
-}
-
 // hides the welcome panel from view
 function hidePanel() {
     document.getElementsByClassName("panel")[0].style.display = "none"
+    document.getElementsByClassName("bar")[0].style.display = "inherit"
+    document.getElementsByClassName("wrapper")[0].style.display = "inherit"
 }
 
 // unhides the welcome panel
 function showPanel() {
     document.getElementsByClassName("panel")[0].style.display = "initial"
-}
-
-// callback function for when a data token is entered manually into the welcome form
-function idFormEnter(e) {
-    // listen for the enter key
-    if (e.which === 13 || e.keyCode === 13) {
-        var element = document.getElementById("data-id");
-        var id = element.value;
-        if (!id) {
-            return false
-        }
-
-        // remove the input box
-        element.parentElement.removeChild(element);
-
-        // update status
-        document.getElementById("prompt").innerHTML = "Loading...";
-
-        // get data
-        var parts = id.split("/");
-        console.log(parts);
-
-        if (parts.length === 2) {
-            var url = "https://gist.githubusercontent.com/anonymous/" + parts[0] + "/raw/" + parts[1] + "/luckperms-data.json";
-            readPage(url, function (ret) {
-                var data = JSON.parse(ret);
-
-                console.log("Loaded from: ")
-            	console.log(url)
-
-                // replace the local node array with the json data
-                rows = data.nodes;
-                who = data.who;
-                cmdAlias = data.cmdAlias;
-                if (!cmdAlias) {
-                	cmdAlias = "lp"
-                }
-                hidePanel();
-                reloadTable()
-            })
-        } else {
-            // just the load the table
-            hidePanel();
-            reloadTable()
-        }
-
-        return false
-    }
-
-    return true
+    document.getElementsByClassName("bar")[0].style.display = "none"
+    document.getElementsByClassName("wrapper")[0].style.display = "none"
 }
 
 // try to load the page from the url parameters when the page loads
 var params = document.location.search;
 if (params) {
+    
+    console.log("Trying to load from URL params");
+
     if (params.startsWith("?")) {
         params = params.substring(1)
     }
 
+    // update status
+    document.getElementById("prompt").innerHTML = "Loading...";
+
     // get data
     var parts = params.split("/");
+    console.log(parts);
+
     if (parts.length === 2) {
-        console.log("Loading from URL params");
-
-        // remove the input box
-        var element = document.getElementById("data-id");
-        element.parentElement.removeChild(element);
-
-        // update status
-        document.getElementById("prompt").innerHTML = "Loading...";
-
         var url = "https://gist.githubusercontent.com/anonymous/" + parts[0] + "/raw/" + parts[1] + "/luckperms-data.json";
         readPage(url, function (ret) {
             var data = JSON.parse(ret);
@@ -531,10 +486,22 @@ if (params) {
             who = data.who;
             cmdAlias = data.cmdAlias;
             if (!cmdAlias) {
-            	cmdAlias = "lp"
+                cmdAlias = "lp"
             }
+
+            // populate autocomplete options
+            perms = data.knownPermissions;
+            if (perms) {
+                perms.forEach(addAutoCompletePermission)
+            }
+
             hidePanel();
             reloadTable()
         })
+    } else {
+        // just the load the table
+        console.log("Creating empty table for test purposes.")
+        hidePanel();
+        reloadTable()
     }
 }
