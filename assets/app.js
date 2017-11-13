@@ -456,10 +456,19 @@ function showPanel() {
     document.getElementsByClassName("wrapper")[0].style.display = "none"
 }
 
+// pulls the latest production version of the editor and displays it
+setTimeout(function () {
+	readPage("https://api.github.com/repos/lucko/LuckPermsWeb/branches/production", function (ret) {
+	    var data = JSON.parse(ret);
+	    var version = document.getElementById("version");
+	    version.innerHTML = data.commit.sha.substring(0,7);
+	    version.href = data.commit.html_url;
+	});
+}, 0)
+
 // try to load the page from the url parameters when the page loads
 var params = document.location.search;
 if (params) {
-    
     console.log("Trying to load from URL params");
 
     if (params.startsWith("?")) {
