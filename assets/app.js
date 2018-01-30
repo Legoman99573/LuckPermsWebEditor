@@ -76,17 +76,6 @@ function loadContent() {
     }
 }
 
-// pulls the latest production version of the editor and displays it
-function loadVersion() {
-    $.getJSON("https://api.github.com/repos/lucko/LuckPermsWebEditor/branches/production", function(data) {
-        var version = $("#version");
-        version.html(data.commit.sha.substring(0, 7));
-        version.attr("href", data.commit.html_url);
-    }).fail(function() {
-        console.log("Unable to load version.");
-    });
-}
-
 function canUndo() {
     return permissionHistoryPos > 0;
 }
@@ -136,33 +125,34 @@ function addAutoCompletePermission(perm) {
 function makeNode(perm, value, server, world, expiry, contexts) {
     var node = {};
 
-    node["permission"] = perm;
+    node.permission = perm;
 
     if (!value) {
-        node["value"] = false
+        node.value = false;
     }
 
     if (server.toLowerCase() !== "global") {
-        node["server"] = server
+        node.server = server
     }
 
     if (world.toLowerCase() !== "global") {
-        node["world"] = world
+        node.world = world
     }
 
     if (expiry > 1) {
-        node["expiry"] = expiry
+        node.expiry = expiry
     }
 
     var hasContexts = false;
     for (var key in contexts) {
         if (contexts.hasOwnProperty(key)) {
             hasContexts = true
+            break;
         }
     }
 
     if (hasContexts) {
-        node["contexts"] = contexts
+        node.context = contexts
     }
 
     return node
@@ -342,14 +332,14 @@ function handleCopy() {
         world.val(null);
     }
     if (node.hasOwnProperty("contexts")) {
-        var contextsStr = "";
-        for (var key in node.contexts) {
-            if (node.contexts.hasOwnProperty(key)) {
-                var value = node.contexts[key];
-                contextsStr += (key + "=" + value + " ")
+        var contextStr = "";
+        for (var key in node.context) {
+            if (node.context.hasOwnProperty(key)) {
+                var value = node.context[key];
+                contextStr += (key + "=" + value + " ")
             }
         }
-        contexts.val(contextsStr);
+        contexts.val(contextStr);
     } else {
         contexts.val(null);
     }
@@ -497,9 +487,9 @@ function handleEditStop(e) {
     } else if (type == "contexts") {
         if ((value == "") || (value == "none")) {
             value = "none";
-            delete rows[id].contexts;
+            delete rows[id].context;
         } else {
-            rows[id].contexts = parseContexts(value);
+            rows[id].context = parseContexts(value);
         }
     }
 
@@ -784,16 +774,16 @@ function nodeToHtml(id, node) {
         content += getContentDiv("world") + 'global</div>'
     }
 
-    if (node.hasOwnProperty("contexts")) {
-        var contextsStr = "";
-        for (var key in node.contexts) {
-            if (node.contexts.hasOwnProperty(key)) {
-                var value = node.contexts[key];
-                contextsStr += (key + "=" + value + " ")
+    if (node.hasOwnProperty("context")) {
+        var contextStr = "";
+        for (var key in node.context) {
+            if (node.context.hasOwnProperty(key)) {
+                var value = node.context[key];
+                contextStr += (key + "=" + value + " ")
             }
         }
 
-        content += getContentDiv("contexts") + escapeHtml(contextsStr.trim()) + '</div>'
+        content += getContentDiv("contexts") + escapeHtml(contextStr.trim()) + '</div>'
     } else {
         content += getContentDiv("contexts") + 'none</div>'
     }
@@ -927,4 +917,3 @@ $(window).bind("keydown", handleShortcuts);
 // Do things when page has loaded
 $(loadCss);
 $(loadContent);
-$(loadVersion);
